@@ -1,0 +1,332 @@
+select * from salespeople
+
+select * from dealerships
+where state= 'CA'
+
+select * from salespeople
+where dealership_id in (2,5)
+order by 1
+
+select * from salespeople
+inner join dealerships 
+on salespeople.dealership_id = dealerships.dealership_id
+order by 1
+
+
+select salespeople.* from salespeople
+inner join dealerships 
+on salespeople.dealership_id = dealerships.dealership_id
+where dealerships.state = 'CA'
+order by 1
+
+create table dealers_in_CA as (
+select salespeople.* from salespeople
+inner join dealerships 
+on salespeople.dealership_id = dealerships.dealership_id
+where dealerships.state = 'CA'
+order by 1
+)
+
+drop table dealers_in_ca
+
+select * from customers as c
+left outer join emails as e
+on c.customer_id = e.customer_id
+order by c.customer_id
+limit 1000
+
+select * from customers as c
+left outer join emails as e
+on c.customer_id = e.customer_id
+where e.customer_id is null 
+order by c.customer_id
+limit 1000
+
+select * from emails as e
+right outer join customers as c
+on e.customer_id = c.customer_id
+order by c.customer_id
+limit 1000
+
+select * from emails as e
+full outer join customers as c
+on e.customer_id = c.customer_id
+limit 1000
+
+select p1.product_id, p1.model, p2.product_id, p2.model 
+from products as p1
+cross join products as p2
+
+select c.customer_id, c.first_name, c.last_name, c.phone,p.product_type
+from customers as c
+inner join sales as s on c.customer_id = s.customer_id
+inner join products as p 
+on s.product_id = p.product_id
+where p.product_type = 'automobile' and
+c.phone is not null
+
+select * from sales
+
+select * from customers
+
+select * from salespeople as s
+inner join dealerships as d
+on s.dealership_id = d.dealership_id
+where d.state = 'CA'
+order by 1
+
+select * from salespeople
+inner join (
+	select * from dealerships 
+	where state = 'CA'
+) as d
+on d.dealership_id = salespeople.dealership_id
+order by 1
+
+(
+select street_address,city, state, postal_code from customers
+where street_address is not null
+)
+union
+(
+select street_address,city, state, postal_code from dealerships
+where street_address is not null
+)
+
+
+(select first_name, last_name, 'Customer' as guest_type
+from customers
+where city='Los Angeles' and state='CA')
+union
+(select first_name, last_name, 'Employee' as guest_type 
+ from salespeople s
+inner join dealerships d
+on s.dealership_id = d.dealership_id
+where d.city='Los Angeles' and d.state='CA')
+
+with d as(
+select * from dealerships
+where dealerships.state = 'CA'
+)
+select * from salespeople as s
+inner join d
+on d.dealership_id = s.dealership_id
+order by 1
+
+select first_name,last_name,postal_code,
+case when postal_code ='33111' then 'Elite customer'
+when postal_code = '33124' then 'Premium customer'
+else 'Standard customer' end
+as customer_type
+from customers
+
+select customer_id,
+case when state in ('MA', 'NH', 'VT', 'ME', 'CT','RI') then 'New England'
+when state in ( 'GA', 'FL', 'MS', 'AL', 'LA', 'KY', 'VA', 'NC', 'SC', 'TN','VI', 'WV', 'AR') then 'Southeast'
+else 'Other' end
+as customer_region_type
+from customers
+
+select first_name,last_name,
+coalesce (phone, 'no phone') as phone, gender 
+from customers
+where gender = 'M'
+order by 1
+
+select c.customer_id,
+nullif (title, 'Honorable') as title, first_name,last_name 
+from customers as c
+order by 1
+
+select product_id, model, year, product_type, 
+least (600.00, base_msrp) as base_msrp,
+production_start_date, production_end_date
+from products 
+where product_type = 'scooter'
+order by 1
+
+select product_id,
+model,
+year::text,     --cast the data type of the column
+product_type,
+base_msrp,
+production_start_date,
+production_end_date
+FROM products;
+
+select distinct year from products
+order by 1
+
+select distinct year,product_type from products
+order by 1, 2
+
+select distinct on (first_name) * from salespeople
+order by first_name, hire_date
+
+select c.*,p.*, 
+coalesce (s.dealership_id, -1) as dealership_id,
+case when s.sales_amount < (p.base_msrp-500) then 1
+else 0 end
+as high_savings
+from customers c
+inner join sales as s
+on c.customer_id = s.customer_id
+inner join products as p 
+on p.product_id = s.product_id
+left outer join dealerships d
+on d.dealership_id = s.dealership_id
+
+--Aggregate fuctions
+
+select count(customer_id) from customers
+
+select count(*) from customers
+
+select count(distinct state) from customers
+
+select count(*) from customers
+where state = 'CA'
+
+select count(*)/2 from customers
+
+select sum(base_msrp)::float/count(*) as avg_base_msrp from products
+
+select min(base_msrp), max(base_msrp), avg(base_msrp), stddev(base_msrp) from products
+
+select distinct state from customers
+
+select count(*) from customers where state='{state}'
+
+select state, count(*) from customers
+group by state
+
+
+select c.state, avg(p.base_msrp) as avg_base_msrp_per_state from customers as c
+inner join sales as s
+on s.customer_id = c.customer_id
+inner join products as p
+on p.product_id = s.product_id
+group by c.state
+
+select state, count(*) from customers
+group by state
+order by state
+
+select state, count(*) from customers
+group by state
+order by count(*)
+
+select state, count(*) from customers
+where gender = 'M'
+group by state
+order by state
+
+select state,gender, count(*) from customers
+group by state,gender
+order by state,gender
+
+select product_type, min(base_msrp),max(base_msrp),avg(base_msrp), stddev(base_msrp) from products 
+group by product_type
+
+select state, gender, count(*) from customers
+group by grouping sets(
+	(state),
+	(gender),
+	(state, gender)
+)
+order by 1,2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
